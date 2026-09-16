@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smart-todo-v1';
+const CACHE_NAME = 'smart-todo-v2';
 const APP_SHELL = [
     './ToDo.html',
     './app.js',
@@ -24,22 +24,21 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Cache-first for the app shell, falling back to network, so the app still opens offline.
+// Network-first: always try to get the latest version when online, so updates
+// show up the moment you open the app. Falls back to the cached copy when
+// there's no connection, so it still works offline.
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            const networkFetch = fetch(event.request)
-                .then(response => {
-                    if (response && response.status === 200) {
-                        const copy = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-                    }
-                    return response;
-                })
-                .catch(() => cached);
-            return cached || networkFetch;
-        })
+        fetch(event.request)
+            .then(response => {
+                if (response && response.status === 200) {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });
