@@ -1577,6 +1577,17 @@
                         <button class="btn-secondary" type="button" onclick="importAppData(document.getElementById('importBackupInput').files[0])">Restore Backup</button>
                     </div>
                 </div>
+
+                <div class="settings-card">
+                    <label for="syncCodeInput">Sync Across Devices</label>
+                    <p style="font-size: 0.8em; color: rgba(255,255,255,0.6); margin: -4px 0 2px;">Enter the same sync code on this device and your other device to keep them in sync automatically.</p>
+                    <input id="syncCodeInput" type="text" placeholder="Choose a sync code (e.g. a private passphrase)">
+                    <div class="settings-actions">
+                        <button class="btn-primary" type="button" onclick="connectSync(document.getElementById('syncCodeInput').value)">Connect</button>
+                        <button class="btn-secondary" type="button" onclick="disconnectSync()">Disconnect</button>
+                    </div>
+                    <p id="syncStatus" style="font-size: 0.8em; color: rgba(255,255,255,0.75); margin-top: 2px;">Not connected</p>
+                </div>
             </div>
         </div>
 
@@ -1700,6 +1711,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

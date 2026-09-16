@@ -45,6 +45,7 @@ function loadCategories() {
 
 function saveCategories() {
     localStorage.setItem('customCategories', JSON.stringify(categories));
+    scheduleSyncPush();
 }
 
 function loadGroupCategories() {
@@ -79,6 +80,7 @@ function loadGroupCategories() {
 
 function saveGroupCategories() {
     localStorage.setItem('groupCategories', JSON.stringify(groupCategories));
+    scheduleSyncPush();
 }
 
 function getCategoryData(categoryKey) {
@@ -276,6 +278,7 @@ function loadRecurringTasks() {
 
 function saveRecurringTasks(recurringTasks) {
     localStorage.setItem('recurringTasks', JSON.stringify(recurringTasks));
+    scheduleSyncPush();
 }
 
 // Catches up every recurring task to the current month. Runs on load, so if the
@@ -403,6 +406,7 @@ function loadCalendarGroupSettings() {
 
 function saveCalendarGroupSettings(settings) {
     localStorage.setItem('calendarGroups', JSON.stringify(settings));
+    scheduleSyncPush();
 }
 
 function ensureGroupCategorySet(groupKey) {
@@ -1668,6 +1672,7 @@ function renderCategoryEditors() {
 // Save todos to localStorage
 function saveTodos() {
     localStorage.setItem('todos', JSON.stringify(todos));
+    scheduleSyncPush();
 }
 
 // Load todos from localStorage
@@ -2421,6 +2426,7 @@ function getAppSettings() {
 
 function saveAppSettings(settings) {
     localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
+    scheduleSyncPush();
 }
 
 function applyTheme(theme) {
@@ -2569,6 +2575,193 @@ function importAppData(file) {
     reader.readAsText(file);
 }
 
+// ==========================================
+// Cross-Device Sync (Firebase)
+// ==========================================
+//
+// To enable this, fill in FIREBASE_CONFIG below with the values from your own
+// free Firebase project (console.firebase.google.com): create a project, add
+// a Web App to get this config object, enable Firestore (in Native mode) and
+// enable Anonymous sign-in under Authentication > Sign-in method.
+//
+// Everyone who knows your sync code can read/write that sync group's data, so
+// pick something long and private rather than something guessable.
+const FIREBASE_CONFIG = {
+    apiKey: 'YOUR_API_KEY',
+    authDomain: 'YOUR_PROJECT.firebaseapp.com',
+    projectId: 'YOUR_PROJECT',
+    storageBucket: 'YOUR_PROJECT.appspot.com',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    appId: 'YOUR_APP_ID'
+};
+
+let firestoreDb = null;
+let syncEnabled = false;
+let syncCode = null;
+let syncUnsubscribe = null;
+let syncPushTimer = null;
+
+function isFirebaseConfigured() {
+    return typeof firebase !== 'undefined' && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+}
+
+function initFirebaseIfNeeded() {
+    if (firestoreDb) return true;
+    if (!isFirebaseConfigured()) return false;
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    firestoreDb = firebase.firestore();
+    return true;
+}
+
+function getSyncSettings() {
+    try {
+        return JSON.parse(localStorage.getItem('syncSettings') || '{}');
+    } catch (error) {
+        return {};
+    }
+}
+
+function saveSyncSettings(settings) {
+    localStorage.setItem('syncSettings', JSON.stringify(settings));
+}
+
+function updateSyncStatus(text) {
+    const el = document.getElementById('syncStatus');
+    if (el) el.textContent = text;
+}
+
+function collectSyncableState() {
+    const data = {};
+    BACKUP_STORAGE_KEYS.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value !== null) data[key] = value;
+    });
+    return data;
+}
+
+function applySyncedState(data) {
+    BACKUP_STORAGE_KEYS.forEach(key => {
+        if (typeof data[key] === 'string') {
+            localStorage.setItem(key, data[key]);
+        }
+    });
+}
+
+// Called from every save* function. Batches rapid changes into one write.
+function scheduleSyncPush() {
+    if (!syncEnabled) return;
+    clearTimeout(syncPushTimer);
+    syncPushTimer = setTimeout(pushSyncState, 800);
+}
+
+function pushSyncState() {
+    if (!syncEnabled || !firestoreDb || !syncCode) return;
+
+    const now = Date.now();
+    const payload = collectSyncableState();
+    payload.updatedAt = now;
+
+    const settings = getSyncSettings();
+    settings.lastAppliedAt = now;
+    saveSyncSettings(settings);
+
+    firestoreDb.collection('syncGroups').doc(syncCode).set(payload)
+        .then(() => updateSyncStatus(`Synced — last change sent ${new Date(now).toLocaleTimeString()}`))
+        .catch(error => {
+            console.error('Sync push failed:', error);
+            updateSyncStatus('Sync error — will retry on next change');
+        });
+}
+
+function startSyncListener() {
+    if (!firestoreDb || !syncCode) return;
+    if (syncUnsubscribe) syncUnsubscribe();
+
+    syncUnsubscribe = firestoreDb.collection('syncGroups').doc(syncCode)
+        .onSnapshot(doc => {
+            if (!doc.exists) return;
+            const data = doc.data();
+            const settings = getSyncSettings();
+            const lastApplied = settings.lastAppliedAt || 0;
+
+            if (!data.updatedAt || data.updatedAt <= lastApplied) return;
+
+            applySyncedState(data);
+            settings.lastAppliedAt = data.updatedAt;
+            saveSyncSettings(settings);
+            window.location.reload();
+        }, error => {
+            console.error('Sync listener error:', error);
+            updateSyncStatus('Sync connection error');
+        });
+}
+
+function connectSync(code) {
+    const trimmed = (code || '').trim();
+    if (!trimmed) {
+        alert('Enter a sync code first.');
+        return;
+    }
+
+    if (!initFirebaseIfNeeded()) {
+        alert('Sync isn\'t configured yet — this app needs a Firebase project connected before it can sync.');
+        return;
+    }
+
+    updateSyncStatus('Connecting…');
+
+    firebase.auth().signInAnonymously()
+        .then(() => firestoreDb.collection('syncGroups').doc(trimmed).get())
+        .then(docSnap => {
+            syncCode = trimmed;
+            syncEnabled = true;
+            const settings = getSyncSettings();
+            settings.code = trimmed;
+            settings.enabled = true;
+            saveSyncSettings(settings);
+
+            if (!docSnap.exists) {
+                pushSyncState();
+                updateSyncStatus('Connected — this device is the starting point');
+            } else {
+                updateSyncStatus('Connected — pulling latest…');
+            }
+
+            startSyncListener();
+        })
+        .catch(error => {
+            console.error('Sync connect failed:', error);
+            updateSyncStatus('Could not connect');
+            alert('Could not connect to sync. Check your Firebase setup and try again.');
+        });
+}
+
+function disconnectSync() {
+    syncEnabled = false;
+    if (syncUnsubscribe) {
+        syncUnsubscribe();
+        syncUnsubscribe = null;
+    }
+    const settings = getSyncSettings();
+    settings.enabled = false;
+    saveSyncSettings(settings);
+    updateSyncStatus('Not connected');
+}
+
+function autoReconnectSync() {
+    const settings = getSyncSettings();
+    if (!settings.enabled || !settings.code) return;
+    if (!initFirebaseIfNeeded()) return;
+
+    const codeInput = document.getElementById('syncCodeInput');
+    if (codeInput) codeInput.value = settings.code;
+
+    connectSync(settings.code);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setThemeFromSettings();
 
@@ -2599,6 +2792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     applyWallpaper();
+    autoReconnectSync();
 });
 
 // Registers the offline/installable app shell. Silently does nothing if the
