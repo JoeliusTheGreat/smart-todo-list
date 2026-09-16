@@ -2587,12 +2587,12 @@ function importAppData(file) {
 // Everyone who knows your sync code can read/write that sync group's data, so
 // pick something long and private rather than something guessable.
 const FIREBASE_CONFIG = {
-    apiKey: 'YOUR_API_KEY',
-    authDomain: 'YOUR_PROJECT.firebaseapp.com',
-    projectId: 'YOUR_PROJECT',
-    storageBucket: 'YOUR_PROJECT.appspot.com',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    appId: 'YOUR_APP_ID'
+    apiKey: 'AIzaSyA3sN7_uZnfnPaGYDOjQ4p5jgEHMChSS-k',
+    authDomain: 'todo-list-b5fd5.firebaseapp.com',
+    projectId: 'todo-list-b5fd5',
+    storageBucket: 'todo-list-b5fd5.firebasestorage.app',
+    messagingSenderId: '610325398460',
+    appId: '1:610325398460:web:fbb835d234f673294ee1b9'
 };
 
 let firestoreDb = null;
