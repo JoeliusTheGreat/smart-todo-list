@@ -473,25 +473,6 @@
             cursor: pointer;
         }
 
-        .wallpaper-preview {
-            min-height: 150px;
-            border: 1.5px dashed rgba(255,255,255,0.2);
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: rgba(255,255,255,0.55);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            overflow: hidden;
-        }
-
-        .wallpaper-preview.empty {
-            background: rgba(255,255,255,0.04);
-        }
-
         .settings-actions {
             display: flex;
             gap: 10px;
@@ -1554,18 +1535,6 @@
                     <label for="newMajorSectionColor">Section Color</label>
                     <input id="newMajorSectionColor" type="color" value="#8b5cf6">
                     <button id="addMajorSectionBtn" class="btn-primary" type="button">Add Major Section</button>
-                </div>
-
-                <div class="settings-card">
-                    <label for="wallpaperUpload">Personal Wallpaper</label>
-                    <input id="wallpaperUpload" type="file" accept="image/*">
-                    <div id="wallpaperPreview" class="wallpaper-preview empty">
-                        <span>No wallpaper selected</span>
-                    </div>
-                    <div class="settings-actions">
-                        <button class="btn-primary" type="button" onclick="applyWallpaperFromUpload()">Apply Wallpaper</button>
-                        <button class="btn-secondary" type="button" onclick="removeWallpaper()">Remove Wallpaper</button>
-                    </div>
                 </div>
 
                 <div class="settings-card">

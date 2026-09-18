@@ -2410,8 +2410,7 @@ const APP_SETTINGS_KEY = 'smartTodoSettings';
 function getAppSettings() {
     const saved = localStorage.getItem(APP_SETTINGS_KEY);
     const defaults = {
-        theme: 'default',
-        wallpaper: ''
+        theme: 'default'
     };
 
     if (!saved) return defaults;
@@ -2435,36 +2434,11 @@ function applyTheme(theme) {
     root.classList.add(`theme-${theme}`);
 }
 
-function applyWallpaper() {
-    const settings = getAppSettings();
-    const preview = document.getElementById('wallpaperPreview');
-    if (!preview) return;
-
-    if (settings.wallpaper) {
-        preview.style.backgroundImage = `url(${settings.wallpaper})`;
-        preview.classList.remove('empty');
-        preview.innerHTML = '';
-        document.body.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url(${settings.wallpaper})`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundAttachment = 'fixed';
-    } else {
-        preview.style.backgroundImage = 'none';
-        preview.classList.add('empty');
-        preview.innerHTML = '<span>No wallpaper selected</span>';
-        document.body.style.backgroundImage = '';
-        document.body.style.backgroundSize = '';
-        document.body.style.backgroundPosition = '';
-        document.body.style.backgroundAttachment = '';
-    }
-}
-
 function setThemeFromSettings() {
     const settings = getAppSettings();
     const select = document.getElementById('themeSelect');
     if (select) select.value = settings.theme || 'default';
     applyTheme(settings.theme || 'default');
-    applyWallpaper();
 }
 
 function updateSettingsFromForm() {
@@ -2474,39 +2448,6 @@ function updateSettingsFromForm() {
 
     saveAppSettings(settings);
     applyTheme(settings.theme);
-}
-
-function applyWallpaperFromUpload() {
-    const fileInput = document.getElementById('wallpaperUpload');
-    const file = fileInput && fileInput.files[0];
-    if (!file) {
-        alert('Please choose an image first.');
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (event) {
-        const settings = getAppSettings();
-        settings.wallpaper = event.target.result;
-        saveAppSettings(settings);
-        applyWallpaper();
-        const preview = document.getElementById('wallpaperPreview');
-        if (preview) {
-            preview.style.backgroundImage = `url(${settings.wallpaper})`;
-            preview.classList.remove('empty');
-            preview.innerHTML = '';
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeWallpaper() {
-    const settings = getAppSettings();
-    settings.wallpaper = '';
-    saveAppSettings(settings);
-    applyWallpaper();
-    const wallpaperInput = document.getElementById('wallpaperUpload');
-    if (wallpaperInput) wallpaperInput.value = '';
 }
 
 // ==========================================
@@ -2791,7 +2732,6 @@ document.addEventListener('DOMContentLoaded', () => {
         themeSelect.addEventListener('change', updateSettingsFromForm);
     }
 
-    applyWallpaper();
     autoReconnectSync();
 });
 
