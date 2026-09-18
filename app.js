@@ -115,6 +115,20 @@ function lightenHex(hex, percent) {
     return `rgb(${blend(r)}, ${blend(g)}, ${blend(b)})`;
 }
 
+function mixHexColors(hexA, hexB, ratio) {
+    const [r1, g1, b1] = hexToRgbParts(hexA);
+    const [r2, g2, b2] = hexToRgbParts(hexB);
+    const mix = (a, b) => Math.round(a + (b - a) * ratio);
+    return `rgb(${mix(r1, r2)}, ${mix(g1, g2)}, ${mix(b1, b2)})`;
+}
+
+// Picks dark or light text so it stays readable on top of any accent color.
+function getReadableTextColor(hex) {
+    const [r, g, b] = hexToRgbParts(hex);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6 ? '#1d1e23' : '#ece8e1';
+}
+
 function getCategoryBadgeStyle(categoryInfo) {
     const color = categoryInfo.color || '#667eea';
     return `background: ${hexToRgba(color, 0.16)}; color: ${lightenHex(color, 0.4)};`;
@@ -2407,16 +2421,34 @@ function checkGoogleCalendarAuth() {
 
 const APP_SETTINGS_KEY = 'smartTodoSettings';
 
+const DEFAULT_CUSTOM_COLORS = {
+    bg: '#16171b',
+    surface: '#2e2b26',
+    surfaceMuted: '#33363f',
+    text: '#ece8e1',
+    textMuted: '#9a9ca6',
+    border: '#656772',
+    accent: '#c6a15b'
+};
+
+const CUSTOM_COLOR_FIELDS = ['bg', 'surface', 'surfaceMuted', 'text', 'textMuted', 'border', 'accent'];
+
 function getAppSettings() {
     const saved = localStorage.getItem(APP_SETTINGS_KEY);
     const defaults = {
-        theme: 'default'
+        theme: 'default',
+        customColors: { ...DEFAULT_CUSTOM_COLORS }
     };
 
     if (!saved) return defaults;
 
     try {
-        return { ...defaults, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        return {
+            ...defaults,
+            ...parsed,
+            customColors: { ...DEFAULT_CUSTOM_COLORS, ...(parsed.customColors || {}) }
+        };
     } catch (error) {
         console.warn('Unable to load app settings:', error);
         return defaults;
@@ -2428,17 +2460,58 @@ function saveAppSettings(settings) {
     scheduleSyncPush();
 }
 
-function applyTheme(theme) {
-    const root = document.body;
-    root.classList.remove('theme-default', 'theme-dark', 'theme-light', 'theme-sunset');
-    root.classList.add(`theme-${theme}`);
+// Custom theme colors are applied as inline CSS custom properties on <html>,
+// which override the Onyx & Gold defaults defined in :root since every part
+// of the UI is built on those same var(--token) references.
+function applyCustomThemeColors(colors) {
+    const root = document.documentElement.style;
+    root.setProperty('--bg', colors.bg);
+    root.setProperty('--surface', colors.surface);
+    root.setProperty('--surface-muted', colors.surfaceMuted);
+    root.setProperty('--text', colors.text);
+    root.setProperty('--text-muted', colors.textMuted);
+    root.setProperty('--text-faint', mixHexColors(colors.textMuted, colors.surface, 0.5));
+    root.setProperty('--border', hexToRgba(colors.border, 0.35));
+    root.setProperty('--accent', colors.accent);
+    root.setProperty('--accent-strong', lightenHex(colors.accent, 0.2));
+    root.setProperty('--accent-soft', hexToRgba(colors.accent, 0.14));
+    root.setProperty('--on-accent', getReadableTextColor(colors.accent));
+}
+
+function clearCustomThemeColors() {
+    const root = document.documentElement.style;
+    ['--bg', '--surface', '--surface-muted', '--text', '--text-muted', '--text-faint',
+        '--border', '--accent', '--accent-strong', '--accent-soft', '--on-accent']
+        .forEach(prop => root.removeProperty(prop));
+}
+
+function applyTheme(theme, customColors) {
+    if (theme === 'custom') {
+        applyCustomThemeColors(customColors || DEFAULT_CUSTOM_COLORS);
+    } else {
+        clearCustomThemeColors();
+    }
+}
+
+function populateCustomColorInputs(colors) {
+    CUSTOM_COLOR_FIELDS.forEach(field => {
+        const input = document.querySelector(`[data-custom-color="${field}"]`);
+        if (input) input.value = colors[field] || DEFAULT_CUSTOM_COLORS[field];
+    });
+}
+
+function updateCustomThemeCardVisibility(theme) {
+    const card = document.getElementById('customThemeCard');
+    if (card) card.hidden = theme !== 'custom';
 }
 
 function setThemeFromSettings() {
     const settings = getAppSettings();
     const select = document.getElementById('themeSelect');
     if (select) select.value = settings.theme || 'default';
-    applyTheme(settings.theme || 'default');
+    populateCustomColorInputs(settings.customColors);
+    updateCustomThemeCardVisibility(settings.theme || 'default');
+    applyTheme(settings.theme || 'default', settings.customColors);
 }
 
 function updateSettingsFromForm() {
@@ -2447,7 +2520,24 @@ function updateSettingsFromForm() {
     settings.theme = document.getElementById('themeSelect')?.value || settings.theme;
 
     saveAppSettings(settings);
-    applyTheme(settings.theme);
+    updateCustomThemeCardVisibility(settings.theme);
+    applyTheme(settings.theme, settings.customColors);
+}
+
+function updateCustomColorFromInput(field, value) {
+    const settings = getAppSettings();
+    settings.theme = 'custom';
+    settings.customColors = { ...settings.customColors, [field]: value };
+    saveAppSettings(settings);
+    applyTheme('custom', settings.customColors);
+}
+
+function resetCustomThemeColors() {
+    const settings = getAppSettings();
+    settings.customColors = { ...DEFAULT_CUSTOM_COLORS };
+    saveAppSettings(settings);
+    populateCustomColorInputs(settings.customColors);
+    applyTheme(settings.theme, settings.customColors);
 }
 
 // ==========================================
@@ -2731,6 +2821,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (themeSelect) {
         themeSelect.addEventListener('change', updateSettingsFromForm);
     }
+
+    document.querySelectorAll('[data-custom-color]').forEach(input => {
+        input.addEventListener('input', () => {
+            updateCustomColorFromInput(input.dataset.customColor, input.value);
+        });
+    });
 
     autoReconnectSync();
 });

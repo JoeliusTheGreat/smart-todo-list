@@ -58,61 +58,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        body.theme-dark {
-            background: #191b26;
-            color: #e4e5ef;
-        }
-
-        body.theme-light {
-            background: #f6f7fb;
-            color: #33364a;
-        }
-
-        body.theme-sunset {
-            background: linear-gradient(180deg, #fbeee7 0%, #f7e6da 100%);
-            color: #4a3b34;
-        }
-
-        .theme-dark .container,
-        .theme-dark .calendar-container,
-        .theme-dark .section-subsection,
-        .theme-dark .settings-card,
-        .theme-dark .category-row,
-        .theme-dark .todo-item,
-        .theme-dark .task-item-with-date,
-        .theme-dark .date-group-header,
-        .theme-dark .category-editor,
-        .theme-dark .category-filter .filter-btn {
-            background: #21232f;
-            color: #e4e5ef;
-            border-color: #34374a;
-        }
-
-        .theme-dark .section h2,
-        .theme-dark .section-subsection h3,
-        .theme-dark .calendar-header h3,
-        .theme-dark .settings-card label,
-        .theme-dark .stat-label,
-        .theme-dark .task-name,
-        .theme-dark .todo-text,
-        .theme-dark .calendar-event .event-title,
-        .theme-dark .date-group-header,
-        .theme-dark .calendar-day,
-        .theme-dark .calendar-day-number,
-        .theme-dark .task-item-with-date .task-name,
-        .theme-dark .todo-item .todo-text,
-        .theme-dark .todo-item .category-badge,
-        .theme-dark .settings-card {
-            color: #e4e5ef;
-        }
-
-        .theme-dark textarea,
-        .theme-dark input,
-        .theme-dark select {
-            background: #191b26;
-            color: #e4e5ef;
-            border-color: #3c3f54;
-        }
 
         .container {
             position: relative;
@@ -471,6 +416,34 @@
             background: transparent;
             padding: 4px;
             cursor: pointer;
+        }
+
+        .custom-color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .custom-color-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.8em;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .custom-color-row input[type="color"] {
+            width: 100%;
+            min-height: 40px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        #customThemeCard[hidden] {
+            display: none;
         }
 
         .settings-actions {
@@ -1520,10 +1493,45 @@
                         <label for="themeSelect">App Theme</label>
                         <select id="themeSelect">
                             <option value="default">Onyx &amp; Gold</option>
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                            <option value="sunset">Sunset</option>
+                            <option value="custom">Custom</option>
                         </select>
+                    </div>
+                </div>
+
+                <div id="customThemeCard" class="settings-card" hidden>
+                    <label>Custom Theme Colors</label>
+                    <div class="custom-color-grid">
+                        <label class="custom-color-row">
+                            <span>Background</span>
+                            <input type="color" id="customColorBg" data-custom-color="bg">
+                        </label>
+                        <label class="custom-color-row">
+                            <span>Cards / Surface</span>
+                            <input type="color" id="customColorSurface" data-custom-color="surface">
+                        </label>
+                        <label class="custom-color-row">
+                            <span>Secondary Panels</span>
+                            <input type="color" id="customColorSurfaceMuted" data-custom-color="surfaceMuted">
+                        </label>
+                        <label class="custom-color-row">
+                            <span>Text</span>
+                            <input type="color" id="customColorText" data-custom-color="text">
+                        </label>
+                        <label class="custom-color-row">
+                            <span>Muted Text</span>
+                            <input type="color" id="customColorTextMuted" data-custom-color="textMuted">
+                        </label>
+                        <label class="custom-color-row">
+                            <span>Border</span>
+                            <input type="color" id="customColorBorder" data-custom-color="border">
+                        </label>
+                        <label class="custom-color-row">
+                            <span>Accent</span>
+                            <input type="color" id="customColorAccent" data-custom-color="accent">
+                        </label>
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn-secondary" type="button" onclick="resetCustomThemeColors()">Reset to Onyx &amp; Gold</button>
                     </div>
                 </div>
 
