@@ -270,10 +270,11 @@
             height: 28px;
             padding: 0;
             border: 1px solid var(--border);
-            border-radius: 999px;
+            border-radius: var(--radius-sm);
             background: var(--surface-muted);
             color: var(--text-muted);
-            font-size: 0.7em;
+            font-size: 0.85em;
+            line-height: 1;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -1736,7 +1737,7 @@
                 <div class="section" data-section-id="paste-lists">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Paste Your Lists</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
 
                     <div id="calendarGroupsContainer"></div>
@@ -1746,7 +1747,7 @@
                 <div class="section" data-section-id="your-todos">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Your Todos</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="section-subsection">
                         <h3>Filters</h3>
@@ -1772,7 +1773,7 @@
                 <div class="section" data-section-id="completed">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Completed</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="calendar-container">
                         <div id="completedList"></div>
@@ -1783,7 +1784,7 @@
                 <div class="section" data-section-id="repeating-tasks">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Repeating Tasks</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="calendar-container">
                         <div id="repeatingTasksList"></div>
@@ -1797,7 +1798,7 @@
                 <div class="section" data-section-id="priority">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Priority</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="calendar-container">
                         <div id="priorityList"></div>
@@ -1807,7 +1808,7 @@
                 <div class="section" data-section-id="timeline">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Timeline View</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="calendar-container">
                         <div id="timelineView"></div>
@@ -1818,7 +1819,7 @@
                 <div class="section" data-section-id="past-due">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>Past Due</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="calendar-container">
                         <div id="pastDueList"></div>
@@ -1829,7 +1830,7 @@
                 <div class="section" data-section-id="no-due-date">
                     <div class="section-head" onclick="toggleSection(this)">
                         <h2>No Due Date</h2>
-                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">☰</button>
                     </div>
                     <div class="calendar-container">
                         <div id="noDueDateList"></div>
