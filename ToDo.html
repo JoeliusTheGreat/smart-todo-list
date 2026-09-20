@@ -275,7 +275,10 @@
             color: var(--text-muted);
             font-size: 0.85em;
             line-height: 1;
-            cursor: pointer;
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -292,6 +295,22 @@
 
         .section.collapsed > *:not(.section-head) {
             display: none;
+        }
+
+        .section.dragging {
+            box-shadow: var(--shadow-lg);
+            cursor: grabbing;
+        }
+
+        .section.dragging .section-collapse-btn {
+            cursor: grabbing;
+        }
+
+        .section-drop-placeholder {
+            border: 2px dashed var(--accent);
+            border-radius: var(--radius-lg);
+            background: var(--accent-soft);
+            margin: 10px 20px;
         }
 
         .section-subsection {

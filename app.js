@@ -863,6 +863,8 @@ function saveCollapsedSections(ids) {
 }
 
 function toggleSection(headEl) {
+    if (sectionJustDragged) return;
+
     const section = headEl.closest('.section[data-section-id]');
     if (!section) return;
 
@@ -886,9 +888,172 @@ function applyCollapsedSections() {
     });
 }
 
+// ==========================================
+// Drag-to-Reorder Sections
+// ==========================================
+//
+// Hold the collapse handle (the square icon) and drag to reorder a section
+// within its column. Uses Pointer Events (not the HTML5 drag-and-drop API)
+// so it works with touch, not just a mouse.
+
+const SECTION_ORDER_KEY = 'sectionOrder';
+const SECTION_DRAG_THRESHOLD = 6;
+
+let sectionDragState = null;
+let sectionJustDragged = false;
+
+function saveSectionOrder() {
+    const order = {
+        left: Array.from(document.querySelectorAll('.main-col-left > .section[data-section-id]')).map(el => el.dataset.sectionId),
+        right: Array.from(document.querySelectorAll('.main-col-right > .section[data-section-id]')).map(el => el.dataset.sectionId)
+    };
+    localStorage.setItem(SECTION_ORDER_KEY, JSON.stringify(order));
+}
+
+function applySectionOrder() {
+    let order;
+    try {
+        order = JSON.parse(localStorage.getItem(SECTION_ORDER_KEY) || 'null');
+    } catch (error) {
+        order = null;
+    }
+    if (!order || typeof order !== 'object') return;
+
+    [['left', '.main-col-left'], ['right', '.main-col-right']].forEach(([key, selector]) => {
+        const container = document.querySelector(selector);
+        if (!container || !Array.isArray(order[key])) return;
+
+        order[key].forEach(id => {
+            const el = container.querySelector(`:scope > .section[data-section-id="${id}"]`);
+            if (el) container.appendChild(el);
+        });
+    });
+}
+
+function initSectionDragHandles() {
+    document.querySelectorAll('.section-collapse-btn').forEach(btn => {
+        btn.addEventListener('pointerdown', onSectionDragPointerDown);
+    });
+}
+
+function onSectionDragPointerDown(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+
+    const btn = event.currentTarget;
+    const section = btn.closest('.section[data-section-id]');
+    const container = section && section.parentElement;
+    if (!section || !container) return;
+
+    sectionDragState = {
+        section,
+        container,
+        startX: event.clientX,
+        startY: event.clientY,
+        dragging: false,
+        placeholder: null,
+        offsetX: 0,
+        offsetY: 0
+    };
+
+    document.addEventListener('pointermove', onSectionDragPointerMove);
+    document.addEventListener('pointerup', onSectionDragPointerUp);
+    document.addEventListener('pointercancel', onSectionDragPointerUp);
+}
+
+function onSectionDragPointerMove(event) {
+    const state = sectionDragState;
+    if (!state) return;
+
+    const dx = event.clientX - state.startX;
+    const dy = event.clientY - state.startY;
+
+    if (!state.dragging) {
+        if (Math.sqrt(dx * dx + dy * dy) < SECTION_DRAG_THRESHOLD) return;
+        beginSectionDrag(event);
+    }
+
+    state.section.style.left = `${event.clientX - state.offsetX}px`;
+    state.section.style.top = `${event.clientY - state.offsetY}px`;
+    updateSectionDropPlaceholder(event.clientY);
+}
+
+function beginSectionDrag(event) {
+    const state = sectionDragState;
+    const rect = state.section.getBoundingClientRect();
+
+    state.dragging = true;
+    state.offsetX = state.startX - rect.left;
+    state.offsetY = state.startY - rect.top;
+
+    state.placeholder = document.createElement('div');
+    state.placeholder.className = 'section-drop-placeholder';
+    state.placeholder.style.height = `${state.section.offsetHeight}px`;
+    state.container.insertBefore(state.placeholder, state.section.nextSibling);
+
+    state.section.style.position = 'fixed';
+    state.section.style.width = `${rect.width}px`;
+    state.section.style.left = `${rect.left}px`;
+    state.section.style.top = `${rect.top}px`;
+    state.section.style.zIndex = '999';
+    state.section.style.pointerEvents = 'none';
+    state.section.classList.add('dragging');
+}
+
+function updateSectionDropPlaceholder(clientY) {
+    const state = sectionDragState;
+    const siblings = Array.from(state.container.querySelectorAll(':scope > .section[data-section-id]'))
+        .filter(el => el !== state.section);
+
+    let insertBeforeEl = null;
+    for (const sibling of siblings) {
+        const rect = sibling.getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) {
+            insertBeforeEl = sibling;
+            break;
+        }
+    }
+
+    if (insertBeforeEl) {
+        state.container.insertBefore(state.placeholder, insertBeforeEl);
+    } else {
+        state.container.appendChild(state.placeholder);
+    }
+}
+
+function onSectionDragPointerUp() {
+    const state = sectionDragState;
+    document.removeEventListener('pointermove', onSectionDragPointerMove);
+    document.removeEventListener('pointerup', onSectionDragPointerUp);
+    document.removeEventListener('pointercancel', onSectionDragPointerUp);
+
+    if (!state) return;
+    sectionDragState = null;
+
+    if (!state.dragging) return;
+
+    state.placeholder.parentElement.insertBefore(state.section, state.placeholder);
+    state.placeholder.remove();
+    state.section.classList.remove('dragging');
+    state.section.style.position = '';
+    state.section.style.left = '';
+    state.section.style.top = '';
+    state.section.style.width = '';
+    state.section.style.zIndex = '';
+    state.section.style.pointerEvents = '';
+
+    saveSectionOrder();
+
+    sectionJustDragged = true;
+    setTimeout(() => {
+        sectionJustDragged = false;
+    }, 0);
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    applySectionOrder();
     applyCollapsedSections();
+    initSectionDragHandles();
     renderMainCalendarGroups();
     renderMajorSectionSettings();
     loadTodos();
