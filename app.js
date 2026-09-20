@@ -843,8 +843,52 @@ document.addEventListener('change', event => {
     defaultDueDate = dateInput.value || null;
 });
 
+// ==========================================
+// Collapsible Sections
+// ==========================================
+
+const COLLAPSED_SECTIONS_KEY = 'collapsedSections';
+
+function loadCollapsedSections() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(COLLAPSED_SECTIONS_KEY) || '[]');
+        return Array.isArray(saved) ? saved : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveCollapsedSections(ids) {
+    localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(ids));
+}
+
+function toggleSection(headEl) {
+    const section = headEl.closest('.section[data-section-id]');
+    if (!section) return;
+
+    const id = section.dataset.sectionId;
+    const isCollapsed = section.classList.toggle('collapsed');
+
+    const ids = loadCollapsedSections();
+    const idx = ids.indexOf(id);
+    if (isCollapsed && idx === -1) {
+        ids.push(id);
+    } else if (!isCollapsed && idx !== -1) {
+        ids.splice(idx, 1);
+    }
+    saveCollapsedSections(ids);
+}
+
+function applyCollapsedSections() {
+    const ids = loadCollapsedSections();
+    document.querySelectorAll('.section[data-section-id]').forEach(section => {
+        section.classList.toggle('collapsed', ids.includes(section.dataset.sectionId));
+    });
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    applyCollapsedSections();
     renderMainCalendarGroups();
     renderMajorSectionSettings();
     loadTodos();

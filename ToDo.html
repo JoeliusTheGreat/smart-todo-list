@@ -122,6 +122,8 @@
             top: 68px;
             right: 18px;
             width: min(420px, calc(100% - 36px));
+            max-height: calc(100vh - 88px);
+            overflow-y: auto;
             background: rgba(23, 24, 28, 0.94);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
@@ -247,6 +249,48 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+
+        .section-head h2 {
+            margin-bottom: 0;
+        }
+
+        .section-collapse-btn {
+            flex: 0 0 auto;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface-muted);
+            color: var(--text-muted);
+            font-size: 0.7em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .section-collapse-btn:hover {
+            background: var(--border);
+        }
+
+        .section.collapsed .section-collapse-btn {
+            transform: rotate(-90deg);
+        }
+
+        .section.collapsed > *:not(.section-head) {
+            display: none;
         }
 
         .section-subsection {
@@ -1053,6 +1097,7 @@
         .task-name {
             flex: 1;
             color: var(--text);
+            word-break: break-word;
         }
 
         .due-badge {
@@ -1470,6 +1515,123 @@
         .task-item-with-date.cat-other {
             border-left-color: #616161;
         }
+
+        /* ==========================================
+           Mobile
+           ========================================== */
+        @media (max-width: 640px) {
+            /* Prevent iOS Safari from zooming in on focus (triggers below 16px) */
+            input, select, textarea {
+                font-size: 16px;
+            }
+
+            .header {
+                padding: 40px 18px 24px;
+            }
+
+            .header h1 {
+                font-size: 1.7em;
+            }
+
+            .header-settings {
+                top: 14px;
+                right: 14px;
+            }
+
+            .settings-toggle-btn {
+                padding: 7px 12px;
+                font-size: 0.8em;
+            }
+
+            .settings-overlay {
+                top: 60px;
+                right: 10px;
+                width: calc(100% - 20px);
+                max-height: calc(100vh - 76px);
+                padding: 16px;
+            }
+
+            .section {
+                padding: 18px;
+            }
+
+            .section h2 {
+                font-size: 1.05em;
+            }
+
+            .section-subsection {
+                padding: 14px;
+            }
+
+            .calendar-band {
+                padding: 0;
+            }
+
+            .calendar-container {
+                padding: 12px;
+            }
+
+            .calendar-weekdays,
+            .calendar-days {
+                gap: 4px;
+            }
+
+            .calendar-days {
+                grid-auto-rows: minmax(64px, auto);
+            }
+
+            .calendar-day-body {
+                padding: 3px 4px 4px;
+            }
+
+            .calendar-day-number {
+                font-size: 0.8em;
+            }
+
+            .calendar-day-task {
+                font-size: 0.58em;
+                padding: 1px 4px;
+                gap: 2px;
+            }
+
+            .calendar-day-more {
+                font-size: 0.55em;
+            }
+
+            .weekday {
+                font-size: 0.62em;
+                padding: 4px 0;
+            }
+
+            .category-editor-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .category-editor-grid button {
+                width: 100%;
+            }
+
+            .todo-item,
+            .task-item-with-date {
+                flex-wrap: wrap;
+            }
+
+            .due-date-input-group {
+                flex-wrap: wrap;
+            }
+
+            .settings-grid,
+            .custom-color-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .settings-grid,
+            .custom-color-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1571,15 +1733,21 @@
         <div class="main-grid">
             <div class="main-col-left">
                 <!-- Paste & Create Section -->
-                <div class="section">
-                    <h2>Paste Your Lists</h2>
+                <div class="section" data-section-id="paste-lists">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Paste Your Lists</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
 
                     <div id="calendarGroupsContainer"></div>
                 </div>
 
                 <!-- Todo List Section -->
-                <div class="section">
-                    <h2>Your Todos</h2>
+                <div class="section" data-section-id="your-todos">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Your Todos</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="section-subsection">
                         <h3>Filters</h3>
                         <div class="category-filter">
@@ -1601,16 +1769,22 @@
                 </div>
 
                 <!-- Completed Section -->
-                <div class="section">
-                    <h2>Completed</h2>
+                <div class="section" data-section-id="completed">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Completed</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="calendar-container">
                         <div id="completedList"></div>
                     </div>
                 </div>
 
                 <!-- Repeating Tasks Section -->
-                <div class="section">
-                    <h2>Repeating Tasks</h2>
+                <div class="section" data-section-id="repeating-tasks">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Repeating Tasks</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="calendar-container">
                         <div id="repeatingTasksList"></div>
                     </div>
@@ -1620,31 +1794,43 @@
             <!-- Timeline Section -->
             <div class="main-col-right">
                 <!-- Priority Section -->
-                <div class="section">
-                    <h2>Priority</h2>
+                <div class="section" data-section-id="priority">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Priority</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="calendar-container">
                         <div id="priorityList"></div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h2>Timeline View</h2>
+                <div class="section" data-section-id="timeline">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Timeline View</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="calendar-container">
                         <div id="timelineView"></div>
                     </div>
                 </div>
 
                 <!-- Past Due Section -->
-                <div class="section">
-                    <h2>Past Due</h2>
+                <div class="section" data-section-id="past-due">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>Past Due</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="calendar-container">
                         <div id="pastDueList"></div>
                     </div>
                 </div>
 
                 <!-- No Due Date Section -->
-                <div class="section">
-                    <h2>No Due Date</h2>
+                <div class="section" data-section-id="no-due-date">
+                    <div class="section-head" onclick="toggleSection(this)">
+                        <h2>No Due Date</h2>
+                        <button class="section-collapse-btn" type="button" aria-label="Collapse section">▾</button>
+                    </div>
                     <div class="calendar-container">
                         <div id="noDueDateList"></div>
                     </div>
