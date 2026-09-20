@@ -923,8 +923,10 @@ function applySectionOrder() {
         const container = document.querySelector(selector);
         if (!container || !Array.isArray(order[key])) return;
 
+        // Search the whole document, not just this container, since a section may
+        // have been dragged into a different column than it was authored in.
         order[key].forEach(id => {
-            const el = container.querySelector(`:scope > .section[data-section-id="${id}"]`);
+            const el = document.querySelector(`.section[data-section-id="${id}"]`);
             if (el) container.appendChild(el);
         });
     });
@@ -974,7 +976,17 @@ function onSectionDragPointerMove(event) {
 
     state.section.style.left = `${event.clientX - state.offsetX}px`;
     state.section.style.top = `${event.clientY - state.offsetY}px`;
-    updateSectionDropPlaceholder(event.clientY);
+    updateSectionDropPlaceholder(event.clientX, event.clientY);
+}
+
+// Finds whichever column (left or right) is actually under the pointer right
+// now, so a section can be dragged from one side to the other. Falls back to
+// wherever the placeholder currently is if the pointer strays outside both
+// columns (e.g. over the header or the calendar, which stays undraggable).
+function getSectionColumnAtPoint(clientX, clientY, fallback) {
+    const hovered = document.elementFromPoint(clientX, clientY);
+    const container = hovered && hovered.closest('.main-col-left, .main-col-right');
+    return container || fallback;
 }
 
 function beginSectionDrag(event) {
@@ -999,8 +1011,10 @@ function beginSectionDrag(event) {
     state.section.classList.add('dragging');
 }
 
-function updateSectionDropPlaceholder(clientY) {
+function updateSectionDropPlaceholder(clientX, clientY) {
     const state = sectionDragState;
+    state.container = getSectionColumnAtPoint(clientX, clientY, state.container);
+
     const siblings = Array.from(state.container.querySelectorAll(':scope > .section[data-section-id]'))
         .filter(el => el !== state.section);
 
